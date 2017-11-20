@@ -115,7 +115,7 @@ impl Drop for DropTest {
 
 const NUM_THREADS: usize = 16;
 // TODO: increase to 1_000_000, currently overflows its stack.
-const NUM_MESSAGES: usize = 10_000;
+const NUM_MESSAGES: usize = 1_000;
 
 #[test]
 fn stress_test() {
