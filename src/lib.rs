@@ -24,9 +24,9 @@
 //! roughly the same type and structure setup.
 //!
 //! ```
-//! # extern crate channel;
+//! # extern crate tchannel;
 //! # fn main() {
-//! use channel::oneshot::{channel, Sender, Receiver, ReceiveError};
+//! use tchannel::oneshot::{channel, Sender, Receiver, ReceiveError};
 //!
 //! // Create a new channel, which has a sender and a receiver.
 //! let (sender, receiver): (Sender<_>, Receiver<_>) = channel();

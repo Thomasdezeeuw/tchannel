@@ -5,7 +5,7 @@
 // or http://opensource.org/licenses/MIT>, at your option. This file may not be
 // used, copied, modified, or distributed except according to those terms.
 
-extern crate channel;
+extern crate tchannel;
 #[cfg(feature = "futures")]
 extern crate futures;
 
@@ -14,7 +14,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
-use channel::mpsc::*;
+use tchannel::mpsc::*;
 
 // Keep in sync with the one in src/mpsc/segment.rs.
 const SEGMENT_SIZE: usize = 32;

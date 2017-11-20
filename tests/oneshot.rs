@@ -5,7 +5,7 @@
 // or http://opensource.org/licenses/MIT>, at your option. This file may not be
 // used, copied, modified, or distributed except according to those terms.
 
-extern crate channel;
+extern crate tchannel;
 #[cfg(feature = "futures")]
 extern crate futures;
 
@@ -19,7 +19,7 @@ use futures::IntoFuture;
 #[cfg(feature = "futures")]
 use futures::executor::spawn;
 
-use channel::oneshot::*;
+use tchannel::oneshot::*;
 
 fn assert_sync<T: Sync>() {}
 fn assert_send<T: Send>() {}
