@@ -1,0 +1,19 @@
+[package]
+name = "tchannel"
+version = "0.1.0"
+authors = ["Thomas de Zeeuw <thomasdezeeuw@gmail.com>"]
+repository = "https://github.com/Thomasdezeeuw/tchannel"
+readme = "README.md"
+keywords = ["channel", "concurrent", "sync", "atomic"]
+license = "MIT/Apache-2.0"
+
+[badges]
+travis-ci = { repository = "Thomasdezeeuw/tchannel" }
+appveyor = { repository = "Thomasdezeeuw/tchannel", service = "github" }
+
+[features]
+default = []
+with-futures = ["futures"]
+
+[dependencies]
+futures = { version = "0.1.17", optional = true }
