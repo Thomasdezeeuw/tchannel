@@ -65,8 +65,6 @@
 #![warn(missing_debug_implementations)]
 #![warn(unused_results)]
 
-extern crate crossbeam;
-
 #[cfg(feature = "futures")]
 extern crate futures;
 
