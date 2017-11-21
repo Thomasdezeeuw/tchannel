@@ -57,13 +57,13 @@ impl<T> AtomicCell<T> {
     /// call this function if the value is empty.
     pub unsafe fn write(&self, value: T) {
         ptr::write(self.data.get(), value);
-        self.state.store(STATE_FULL, Ordering::Relaxed);
+        self.state.store(STATE_FULL, Ordering::Release);
     }
 
     // TODO: doc, include safety stuff.
     pub unsafe fn read(&self) -> Option<T> {
         match self.state.compare_exchange(STATE_FULL, STATE_EMPTY,
-            Ordering::SeqCst, Ordering::Relaxed)
+            Ordering::Acquire, Ordering::Relaxed)
         {
             Ok(_) => Some(ptr::read(self.data.get())),
             Err(_) => None,
