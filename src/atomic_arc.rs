@@ -9,8 +9,8 @@ use std::{mem, ptr};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicPtr, Ordering};
 
-/// `AtomicArc` that can only be set once and then read atomically multiple
-/// times, by multiple threads.
+/// `AtomicArc` that can only be set once, by multiple threads, and then read
+/// atomically multiple times, by multiple threads.
 #[derive(Debug)]
 pub struct AtomicArc<T> {
     /// Pointer created by `Arc::into_raw`.
