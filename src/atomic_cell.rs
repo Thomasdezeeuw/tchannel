@@ -10,7 +10,8 @@ use std::ptr;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::cell::UnsafeCell;
 
-/// This is an `AtomicCell` used for a single reader and single writer.
+/// This is an `AtomicCell` used for a single write and then a single read. Only
+/// a single writer and reader are allowed.
 ///
 /// # Unsafety
 ///
@@ -18,7 +19,9 @@ use std::cell::UnsafeCell;
 /// that have to be up hold by the user(s):
 ///
 /// 1. Only a single thread may write to this value, **once**.
-/// 2. The value may only be written to when empty.
+/// 2. After the single write the single reader may read (and remove) the value.
+///
+/// The value may only be written to when empty.
 ///
 /// Any breaking of the above defined contract will result in undefined
 /// behaviour.
@@ -45,12 +48,12 @@ impl<T> AtomicCell<T> {
         }
     }
 
-    /// Write a value.
+    /// Write a single value.
     ///
     /// # Unsafety
     ///
     /// This function is unsafe because it's up to the caller to make sure it's
-    /// the only thread writing to this value. If it's not the casethis will
+    /// the only thread writing to this value. If it's not the case this will
     /// result in undefined behaviour.
     ///
     /// Another cause of undefined behaviour is if the value is not empty. Only
@@ -60,7 +63,14 @@ impl<T> AtomicCell<T> {
         self.state.store(STATE_FULL, Ordering::Release);
     }
 
-    // TODO: doc, include safety stuff.
+    /// Read and remove the value inside the cell.
+    ///
+    /// If the cell is currently empty it will return none, other is will
+    /// return something. After which the cell will be set to empty.
+    ///
+    /// # Unsafety
+    ///
+    /// Only a single reader is allowed to read from the cell.
     pub unsafe fn read(&self) -> Option<T> {
         match self.state.compare_exchange(STATE_FULL, STATE_EMPTY,
             Ordering::Acquire, Ordering::Relaxed)
@@ -86,6 +96,5 @@ impl<T> Drop for AtomicCell<T> {
     }
 }
 
-// TODO: review this.
 unsafe impl<T: Send> Send for AtomicCell<T> {}
 unsafe impl<T: Sync> Sync for AtomicCell<T> {}
