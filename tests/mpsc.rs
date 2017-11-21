@@ -174,10 +174,11 @@ fn futures() {
     let (mut sender, receiver) = channel();
 
     let handle = thread::spawn(move || {
-        thread::sleep(Duration::from_millis(5));
+        thread::sleep(Duration::from_millis(100));
         assert_eq!(sender.start_send(value1_c), Ok(AsyncSink::Ready));
-        thread::sleep(Duration::from_millis(5));
+        thread::sleep(Duration::from_millis(100));
         assert_eq!(sender.start_send(value2_c), Ok(AsyncSink::Ready));
+        thread::sleep(Duration::from_millis(100));
         assert_eq!(sender.poll_complete(), Ok(Async::Ready(())));
     });
 
