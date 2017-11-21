@@ -36,7 +36,7 @@ fn assertions() {
 fn simple() {
     let value1 = "Hello world".to_owned();
     let (mut sender, mut receiver) = channel();
-    assert!(sender.send(value1.clone()).is_ok(), "expected send ok");
+    assert_eq!(sender.send(value1.clone()), Ok(()));
     assert_eq!(receiver.try_receive().unwrap(), value1);
 }
 
@@ -45,7 +45,7 @@ fn send_alot() {
     const NUM_OPS: usize = 10 * SEGMENT_SIZE;
     let (mut sender, mut receiver) = channel();
     for n in 0..NUM_OPS {
-        assert!(sender.send(format!("value_{}", n)).is_ok(), "expected send ok");
+        assert_eq!(sender.send(format!("value_{}", n)), Ok(()));
     }
     for n in 0..NUM_OPS {
         assert_eq!(receiver.try_receive().unwrap(), format!("value_{}", n));
@@ -63,7 +63,7 @@ fn closed_sender() {
 #[test]
 fn closed_receiver() {
     let (mut sender, receiver) = channel();
-    assert!(sender.send(123).is_ok(), "expected send ok");
+    assert_eq!(sender.send(123), Ok(()));
     mem::drop(receiver);
     assert_eq!(sender.send(456), Err(SendError(456)));
 }
