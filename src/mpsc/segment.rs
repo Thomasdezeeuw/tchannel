@@ -8,7 +8,6 @@
 // TODO: update docs and comments.
 
 use std::mem;
-use std::default::Default;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -94,16 +93,18 @@ impl<T> Segment<T> {
                 let next_segment = match self.next.get() {
                     Some(next_segment) => next_segment,
                     None => {
-                        // expand gaurentees the `next` field will be set to
-                        // something.
+                        // The expand gaurentees the `next` field will be set.
                         self.expand();
                         self.next.get().unwrap()
-                    }
+                    },
                 };
-                // We don't care about the return value, since we'll return our
-                // own Expanded enum in any case.
-                mem::drop(next_segment.append(value));
-                Expanded::Expanded(next_segment)
+                // Make sure the next segment is full already, so we always
+                // return the correct tail segment.
+                let tail_segment = match next_segment.append(value) {
+                    Expanded::No => next_segment,
+                    Expanded::Expanded(tail_segment) => tail_segment,
+                };
+                Expanded::Expanded(tail_segment)
             },
         }
     }
