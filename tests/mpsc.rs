@@ -181,14 +181,10 @@ fn futures() {
         assert_eq!(sender.poll_complete(), Ok(Async::Ready(())));
     });
 
-    // This should be woken up by the sender for both values. To make sure of
-    // that we'll wait before sending any values.
-    for (n, value) in receiver.wait().enumerate() {
-        match n {
-            0 => assert_eq!(value, Ok(value1)),
-            1 => assert_eq!(value, Ok(value2)),
-            _ => panic!("the receiver wasn't notified that the sender was closed"),
-        }
-    }
+    // This should be woken up by the sender for both values.
+    let mut stream = receiver.wait();
+    assert_eq!(stream.next(), Some(Ok(value1)));
+    assert_eq!(stream.next(), Some(Ok(value2)));
+    assert_eq!(stream.next(), None);
     handle.join().unwrap();
 }
