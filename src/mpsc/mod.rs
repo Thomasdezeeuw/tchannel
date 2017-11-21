@@ -70,7 +70,6 @@ impl<T> Sender<T> {
         // value, we don't depend on it to be accurate, hence the relaxed
         // ordering.
         if !self.shared.receiver_alive.load(Ordering::Relaxed) {
-            // Receiver is disconnected.
             return Err(SendError(value));
         }
 
@@ -206,7 +205,7 @@ impl<T> Stream for Receiver<T> {
     type Error = ();
     fn poll(&mut self) -> Poll<Option<T>, ()> {
         // We register our interest before anything so what ever happens we get
-        // a notification.
+        // a notification or we get an item.
         self.shared.task.register();
         match self.try_receive() {
             Ok(value) => Ok(Async::Ready(Some(value))),
@@ -227,7 +226,7 @@ impl<T> Drop for Receiver<T> {
 /// Shared state between the `Receiver` and the `Sender`.
 #[derive(Debug)]
 struct Shared {
-    /// Wether or not the receiver alive.
+    /// Wether or not the receiver is alive.
     receiver_alive: AtomicBool,
     /// A task to wake up once a value is send. The `Receiver` may register
     /// itself, while the `Sender` must notify the task once a value is send.
