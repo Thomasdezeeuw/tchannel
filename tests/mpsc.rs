@@ -189,3 +189,26 @@ fn futures() {
     assert_eq!(stream.next(), None);
     handle.join().unwrap();
 }
+
+#[test]
+#[cfg(feature = "futures")]
+fn futures_regular_send() {
+    use futures::Stream;
+
+    let value1 = "Hello world";
+    let value1_c = value1.clone();
+
+    let (mut sender, receiver) = channel();
+
+    let handle = thread::spawn(move || {
+        thread::sleep(Duration::from_millis(100));
+        // Regular send should also notify the receiver.
+        assert_eq!(sender.send(value1_c), Ok(()), "expected send ok");
+    });
+
+    // This should be woken up by the sender for both values.
+    let mut stream = receiver.wait();
+    assert_eq!(stream.next(), Some(Ok(value1)));
+    assert_eq!(stream.next(), None);
+    handle.join().unwrap();
+}
