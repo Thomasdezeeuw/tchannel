@@ -110,6 +110,13 @@ impl<T> Clone for Sender<T> {
     }
 }
 
+#[cfg(feature = "futures")]
+impl<T> Drop for Sender<T> {
+    fn drop(&mut self) {
+        self.shared.task.notify();
+    }
+}
+
 /// The receiving side of the channel. See [`channel`] to create a channel.
 ///
 /// [`channel`]: fn.channel.html
