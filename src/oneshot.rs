@@ -44,7 +44,7 @@ pub struct SenderDisconnectedError;
 /// Create a new oneshot channel.
 pub fn channel<T: Send + Sync>() -> (Sender<T>, Receiver<T>) {
     let inner = Arc::new(Inner::new());
-    (Sender { inner: inner.clone() }, Receiver { inner: inner })
+    (Sender { inner: Arc::clone(&inner) }, Receiver { inner: inner })
 }
 
 /// The sending side of the channel. See [`channel`] to create a channel.

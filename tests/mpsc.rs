@@ -104,7 +104,7 @@ struct DropTest { value: Arc<AtomicUsize> }
 impl DropTest {
     fn new() -> (DropTest, Arc<AtomicUsize>) {
         let value = Arc::new(AtomicUsize::new(0));
-        (DropTest { value: value.clone() }, value)
+        (DropTest { value: Arc::clone(&value) }, value)
     }
 }
 impl Drop for DropTest {
