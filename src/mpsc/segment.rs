@@ -15,7 +15,8 @@ use std::sync::Arc;
 use super::super::atomic_arc::AtomicArc;
 use super::super::atomic_cell::AtomicCell;
 
-/// The size of a single [`Segment`]. 32 is chosen somewhat arbitrarily.
+/// The number of items in a single [`Segment`]. 32 is chosen somewhat
+/// arbitrarily.
 ///
 /// [`Segment`]: struct.Segment.html
 pub const SEGMENT_SIZE: usize = 32;
@@ -32,12 +33,14 @@ pub enum Expanded<T> {
     Expanded(Arc<Segment<T>>),
 }
 
-/// `Segment` is an array that can hold [`n`] number of items `T`. All write and
-/// pop operations will be deligated to a next `Segment`.
+/// `Segment` is an array that can hold [`n`] number of items `T`. The write
+/// operations will be deligated to a next `Segment`, if any.
 ///
-/// `Segment` will drop the next `Segment`s with which this `Segment` has been
-/// expanded. **So only the first `Segment` in the queue needs to be dropped,
-/// otherwise some `Segments` may be dropped twice**!
+/// # Safety
+///
+/// The `Segment` may have multiple writers, but only a single reader. Hence the
+/// `Segment` will keep track of the write index, but not the read index (that
+/// is up to the user).
 ///
 /// [`n`]: constant.SEGMENT_SIZE.html
 #[derive(Debug)]
@@ -138,7 +141,7 @@ impl<T> Segment<T> {
         }
     }
 
-    /// Get a refernce to the next `Segment` in the linked list.
+    /// Get a refernce to the next `Segment` in the linked list, if any.
     pub fn next_segment(&self) -> Option<Arc<Segment<T>>> {
         self.next.get()
     }
