@@ -7,7 +7,7 @@
 
 use std::mem::{self, ManuallyDrop};
 use std::ptr;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::cell::UnsafeCell;
 
 /// This is an `AtomicCell` used for a single write and then a single read. Only
@@ -27,23 +27,19 @@ use std::cell::UnsafeCell;
 /// behaviour.
 #[derive(Debug)]
 pub struct AtomicCell<T> {
-    /// The state of the value, see the `STATE_*` constants in the
-    /// implementation.
-    state: AtomicUsize,
+    /// Wether or not the cell is full.
+    is_full: AtomicBool,
     // TODO: use Crossbeam's `CachePadded` for `data` field, benchmark various T
     // types, also inside `Segment`.
     data: ManuallyDrop<UnsafeCell<T>>,
 }
-
-const STATE_EMPTY: usize = 0;
-const STATE_FULL:  usize = 1;
 
 impl<T> AtomicCell<T> {
     /// Create a new, empty `AtomicCell`.
     pub fn empty() -> AtomicCell<T> {
         let empty_data = unsafe { mem::uninitialized() };
         AtomicCell {
-            state: AtomicUsize::new(STATE_EMPTY),
+            is_full: AtomicBool::new(false),
             data: ManuallyDrop::new(UnsafeCell::new(empty_data)),
         }
     }
@@ -60,7 +56,7 @@ impl<T> AtomicCell<T> {
     /// call this function if the value is empty.
     pub unsafe fn write(&self, value: T) {
         ptr::write(self.data.get(), value);
-        self.state.store(STATE_FULL, Ordering::Release);
+        self.is_full.store(true, Ordering::Release);
     }
 
     /// Read and remove the value inside the cell.
@@ -72,7 +68,7 @@ impl<T> AtomicCell<T> {
     ///
     /// Only a single reader is allowed to read from the cell.
     pub unsafe fn read(&self) -> Option<T> {
-        match self.state.compare_exchange(STATE_FULL, STATE_EMPTY,
+        match self.is_full.compare_exchange(true, false,
             Ordering::Acquire, Ordering::Relaxed)
         {
             Ok(_) => Some(ptr::read(self.data.get())),
@@ -90,7 +86,7 @@ impl<T> Default for AtomicCell<T> {
 
 impl<T> Drop for AtomicCell<T> {
     fn drop(&mut self) {
-        if self.state.load(Ordering::Relaxed) == STATE_FULL {
+        if self.is_full.load(Ordering::Relaxed) {
             unsafe { ManuallyDrop::drop(&mut self.data); }
         }
     }
