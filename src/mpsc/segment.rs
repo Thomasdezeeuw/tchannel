@@ -130,7 +130,7 @@ impl<T> Segment<T> {
     /// provided `new_segment` as the next `Segment` if this `Segment` doesn't
     /// have any. If however this `Segment` already has a next `Segment` it will
     /// be added to that `Segment` to not waste the allocation.
-    fn expand_with_segment(&self, new_segment: Arc<Segment<T>>) {
+    pub fn expand_with_segment(&self, new_segment: Arc<Segment<T>>) {
         match self.next.set(new_segment) {
             Ok(()) => (),
             Err(new_segment) => {
