@@ -11,9 +11,6 @@ rust:
 script:
   - cargo --version
   - rustc --version
-  - cargo build --verbose
   # Test using all possible feature combinations, keep in sync with AppVeyor.
-  - cargo test --verbose --all --all-features
-  - cargo test --verbose --all --no-default-features
-  # Stress test.
-  - cargo test --verbose --all-features -- --ignored
+  - cargo test --verbose --all --all-features -- --ignored
+  - cargo test --verbose --all --no-default-features -- --ignored
