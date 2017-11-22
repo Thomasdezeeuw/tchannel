@@ -35,3 +35,6 @@ test_script:
   # Test using all possible feature combinations, keep in sync with Travis.
   - cargo test --verbose --all --all-features -- --ignored
   - cargo test --verbose --all --no-default-features -- --ignored
+  # Make sure release mode works as well.
+  - cargo test --verbose --release --all --all-features -- --ignored
+  - cargo test --verbose --release --all --no-default-features -- --ignored
