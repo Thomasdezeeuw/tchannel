@@ -49,6 +49,14 @@ impl<T> AtomicArc<T> {
             },
         }
     }
+
+    /// Convert the `AtomicArc` into an `Arc`, if it was set to something.
+    pub fn into_arc(self) -> Option<Arc<T>> {
+        match self.ptr.swap(ptr::null_mut(), Ordering::Relaxed) {
+            ptr if ptr.is_null() => None,
+            ptr => Some(unsafe { Arc::from_raw(ptr as *const T) }),
+        }
+    }
 }
 
 impl<T> Drop for AtomicArc<T> {
