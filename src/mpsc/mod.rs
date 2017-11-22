@@ -15,6 +15,7 @@
 
 mod segment;
 
+use std::mem;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -42,6 +43,7 @@ pub fn channel<T: Send + Sync>() -> (Sender<T>, Receiver<T>) {
         current: segment,
         read_index: 0,
         shared: shared,
+        old_segment: None,
     };
     (sender, receiver)
 }
@@ -121,17 +123,23 @@ impl<T> Drop for Sender<T> {
 /// [`channel`]: fn.channel.html
 #[derive(Debug)]
 pub struct Receiver<T> {
+    /// The current `Segment` we're reading from.
     current: Arc<Segment<T>>,
     /// The current read index, may never be bigger then `SEGMENT_SIZE`.
     read_index: usize,
     /// Shared state between the `Receiver` and `Sender`.
     shared: Arc<Shared>,
+    /// This a linked list (what `Segment`s are) of old segments that have been
+    /// completely written to and read from, but are not yet ready for reuse,
+    /// e.g. `Sender` still has a reference to it, see `try_reuse`.
+    old_segment: Option<Arc<Segment<T>>>,
 }
 
 impl<T> Receiver<T> {
     /// Try to receive a single value, none blocking. If the channel is empty or
     /// if the sender side is disconnected this will return an error.
     pub fn try_receive(&mut self) -> Result<T, ReceiveError> {
+        self.try_reuse();
         let index = match self.get_read_index() {
             Some(index) => index,
             None => {
@@ -173,20 +181,75 @@ impl<T> Receiver<T> {
     /// Update the `current` segment, returning a boolean wether or not a next
     /// segment exists.
     fn update_current_segment(&mut self) -> bool {
-        // TODO: check if the current `Segment` can be reused, by calling
-        // `reset`.
-        //
-        // Arc::strong_count(&self.current) == 1 => alone access.
-        // Otherwise store store it somewhere maybe? Or also let the Sender
-        // append it to the back, but it can still be dropped without reuse
-        // then.
         match self.current.next_segment() {
             Some(next_segment) => {
-                self.current = next_segment;
+                let mut old_segment = mem::replace(&mut self.current, next_segment);
                 self.read_index = 1;
+
+                // Before we can actually reuse the `old_segment`, we need to
+                // make sure we have alone access to it. If `self.old_segment`
+                // is something or we can't get mutable acess to the
+                // `old_segment` Arc it means that we won't have alone access.
+                if self.old_segment.is_none() {
+                    let can_reuse = if let Some(old_segment) = Arc::get_mut(&mut old_segment) {
+                        let next_segment = old_segment.reset();
+                        // We already have a reference to the next segment, so
+                        // we'll drop it.
+                        mem::drop(next_segment);
+                        true
+                    } else {
+                        false
+                    };
+
+                    if can_reuse {
+                        self.current.expand_with_segment(old_segment);
+                    } else {
+                        // We'll try to reuse it later.
+                        self.old_segment = Some(old_segment);
+                    }
+                }
+                // Else we have a previous segment already stored, so we'll get
+                // to it.
                 true
             },
             None => false
+        }
+    }
+
+    /// Try to reuse old segments in `self.old_segment`, if any.
+    fn try_reuse(&mut self) {
+        // Try to reset the `self.old_segment` Segment and return it's next
+        // segment. This can fail for various reasons and will return (to the
+        // caller) instead.
+        let next_segment = match self.old_segment {
+            None => return,
+            Some(ref mut old_segment) => {
+                // Try to get alone access to the segment.
+                if let Some(ref mut old_segment) = Arc::get_mut(old_segment) {
+                    let next_segment = old_segment.reset();
+                    // This is safe because we checked in
+                    // `update_current_segment` if the segment has a next one
+                    // and we started using that before we could ever get here.
+                    debug_assert!(next_segment.is_none(), "old segment has no next segment");
+                    next_segment.unwrap()
+                } else {
+                    // A `Sender` still has a reference, we'll try again later.
+                    return;
+                }
+            },
+        };
+
+        if Arc::ptr_eq(&next_segment, &self.current) {
+            // If the next segment points to the segment we currently processing
+            // then we can reuse the segment and we're done.
+            let processed_segment = mem::replace(&mut self.old_segment, None);
+            self.current.expand_with_segment(processed_segment.unwrap());
+        } else {
+            // Else we set the `old_segment` to `next_segment` and try to reuse
+            // that.
+            let processed_segment = mem::replace(&mut self.old_segment, Some(next_segment));
+            self.current.expand_with_segment(processed_segment.unwrap());
+            self.try_reuse();
         }
     }
 
