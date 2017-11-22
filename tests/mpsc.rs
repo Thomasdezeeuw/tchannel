@@ -118,6 +118,7 @@ const NUM_THREADS: usize = 16;
 const NUM_MESSAGES: usize = 1_000;
 
 #[test]
+#[ignore]
 fn stress_test() {
     let (sender, mut receiver) = channel();
     for n in 0..NUM_THREADS {
