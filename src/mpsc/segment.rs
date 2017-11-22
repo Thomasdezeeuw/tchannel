@@ -147,14 +147,14 @@ impl<T> Segment<T> {
         self.next.get()
     }
 
-    /// Reset the segment for reuse.
+    /// Reset the segment for reuse, it returns an `Arc` to the next `Segment`.
     ///
     /// # Note
     ///
     /// This doesn't check if all the items are empty!
-    pub fn reset(&mut self) {
+    pub fn reset(&mut self) -> Option<Arc<Segment<T>>> {
         self.write_index.store(0, Ordering::Relaxed);
-        let old_arc = mem::replace(&mut self.next, AtomicArc::empty());
-        mem::drop(old_arc);
+        let next_segment = mem::replace(&mut self.next, AtomicArc::empty());
+        next_segment.into_arc()
     }
 }
