@@ -7,7 +7,7 @@
 
 use std::mem::{self, ManuallyDrop};
 use std::ptr;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{self, AtomicBool, Ordering};
 use std::cell::UnsafeCell;
 
 /// This is an `AtomicCell` used for a single write and then a single read. Only
@@ -56,6 +56,8 @@ impl<T> AtomicCell<T> {
     /// call this function if the value is empty.
     pub unsafe fn write(&self, value: T) {
         ptr::write(self.data.get(), value);
+        // Make sure the data is actually written.
+        atomic::fence(Ordering::Release);
         self.is_full.store(true, Ordering::Release);
     }
 
