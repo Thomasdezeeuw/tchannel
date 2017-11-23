@@ -7,7 +7,6 @@
 
 // TODO: update docs and comments.
 
-use std::mem;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -154,7 +153,6 @@ impl<T> Segment<T> {
     /// This doesn't check if all the items are empty!
     pub fn reset(&mut self) -> Option<Arc<Segment<T>>> {
         self.write_index.store(0, Ordering::Release);
-        let next_segment = mem::replace(&mut self.next, AtomicArc::empty());
-        next_segment.into_arc()
+        self.next.reset()
     }
 }

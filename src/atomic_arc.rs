@@ -10,7 +10,8 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicPtr, Ordering};
 
 /// `AtomicArc` that can only be set once, by multiple threads, and then read
-/// atomically multiple times, by multiple threads.
+/// atomically multiple times, by multiple threads. And once a single thread has
+/// access to it can it be `reset`.
 #[derive(Debug)]
 pub struct AtomicArc<T> {
     /// Pointer created by `Arc::into_raw`.
@@ -50,9 +51,10 @@ impl<T> AtomicArc<T> {
         }
     }
 
-    /// Convert the `AtomicArc` into an `Arc`, if it was set to something.
-    pub fn into_arc(self) -> Option<Arc<T>> {
-        match self.ptr.swap(ptr::null_mut(), Ordering::Relaxed) {
+    /// Reset the `AtomicArc` for reuse. This requires mutable access to make
+    /// sure only a single thread has access to it.
+    pub fn reset(&mut self) -> Option<Arc<T>> {
+        match self.ptr.swap(ptr::null_mut(), Ordering::Acquire) {
             ptr if ptr.is_null() => None,
             ptr => Some(unsafe { Arc::from_raw(ptr as *const T) }),
         }
@@ -61,7 +63,7 @@ impl<T> AtomicArc<T> {
 
 impl<T> Drop for AtomicArc<T> {
     fn drop(&mut self) {
-        let ptr = self.ptr.load(Ordering::Relaxed);
+        let ptr = self.ptr.load(Ordering::Acquire);
         if !ptr.is_null() {
             mem::drop(unsafe { Arc::from_raw(ptr) });
         }
