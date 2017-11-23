@@ -39,7 +39,7 @@ impl<T> AtomicArc<T> {
     }
 
     /// Get a copy of the current `Arc`.
-    pub fn get(&self) -> Option<Arc<T>> {
+    pub fn get_ref(&self) -> Option<Arc<T>> {
         match self.ptr.load(Ordering::Acquire) {
             ptr if ptr.is_null() => None,
             ptr => {

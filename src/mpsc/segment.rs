@@ -89,12 +89,12 @@ impl<T> Segment<T> {
                 Expanded::No
             },
             None => {
-                let next_segment = match self.next.get() {
+                let next_segment = match self.next.get_ref() {
                     Some(next_segment) => next_segment,
                     None => {
                         // The expand gaurentees the `next` field will be set.
                         self.expand();
-                        self.next.get().unwrap()
+                        self.next.get_ref().unwrap()
                     },
                 };
                 // Make sure the next segment is full already, so we always
@@ -135,7 +135,7 @@ impl<T> Segment<T> {
             Err(new_segment) => {
                 // We couldn't write to the `AtomicArc`, thus it means it's
                 // already set.
-                let next_segment = self.next.get().unwrap();
+                let next_segment = self.next.get_ref().unwrap();
                 next_segment.expand_with_segment(new_segment);
             }
         }
@@ -143,7 +143,7 @@ impl<T> Segment<T> {
 
     /// Get a refernce to the next `Segment` in the linked list, if any.
     pub fn next_segment(&self) -> Option<Arc<Segment<T>>> {
-        self.next.get()
+        self.next.get_ref()
     }
 
     /// Reset the segment for reuse, it returns an `Arc` to the next `Segment`.
