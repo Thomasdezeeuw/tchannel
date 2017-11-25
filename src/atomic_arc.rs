@@ -42,12 +42,7 @@ impl<T> AtomicArc<T> {
     pub fn get_ref(&self) -> Option<Arc<T>> {
         match self.ptr.load(Ordering::Acquire) {
             ptr if ptr.is_null() => None,
-            ptr => {
-                let arc: Arc<T> = unsafe { Arc::from_raw(ptr) };
-                let c = Arc::clone(&arc);
-                mem::forget(arc);
-                Some(c)
-            },
+            ptr => unsafe { Some(copy_arc(ptr)) },
         }
     }
 
@@ -59,6 +54,18 @@ impl<T> AtomicArc<T> {
             ptr => Some(unsafe { Arc::from_raw(ptr) }),
         }
     }
+}
+
+/// Create a copy of an raw Arc, without deallocating the Arc of the pointer.
+///
+/// # Safety
+/// The pointer must be created by `Arc::into_raw`, and may not be null.
+unsafe fn copy_arc<T>(ptr: *mut T) -> Arc<T> {
+    debug_assert!(!ptr.is_null(), "null pointer passed to copy_arc");
+    let arc: Arc<T> = Arc::from_raw(ptr);
+    let copy = Arc::clone(&arc);
+    mem::forget(arc); // Don't dealloce the `Arc` at the pointer.
+    copy
 }
 
 impl<T> Drop for AtomicArc<T> {
