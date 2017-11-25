@@ -32,7 +32,7 @@ impl<T> AtomicArc<T> {
     pub fn set(&self, arc: Arc<T>) -> Result<(), (Arc<T>, Arc<T>)> {
         let new_ptr = Arc::into_raw(arc);
         match self.ptr.compare_exchange(ptr::null_mut(), new_ptr as *mut T,
-            Ordering::SeqCst, Ordering::Relaxed)
+            Ordering::SeqCst, Ordering::Acquire)
         {
             Ok(_) => Ok(()),
             Err(current_ptr) => {
