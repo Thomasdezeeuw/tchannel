@@ -230,7 +230,7 @@ impl<T> Receiver<T> {
                     // This is safe because we checked in
                     // `update_current_segment` if the segment has a next one
                     // and we started using that before we could ever get here.
-                    debug_assert!(next_segment.is_none(), "old segment has no next segment");
+                    debug_assert!(next_segment.is_some(), "old segment has no next segment");
                     next_segment.unwrap()
                 } else {
                     // A `Sender` still has a reference, we'll try again later.
