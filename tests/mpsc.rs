@@ -120,31 +120,42 @@ const NUM_MESSAGES: usize = 1_000;
 #[test]
 #[ignore]
 fn stress_test() {
-    let (sender, mut receiver) = channel();
+    let (sender, receiver) = channel();
+
+    let mut handles = Vec::with_capacity(NUM_THREADS + 1);
     for n in 0..NUM_THREADS {
         let mut sender = sender.clone();
-        thread::Builder::new()
-            .name(format!("multi_threaded_{}", n))
+        let handle = thread::Builder::new()
+            .name(format!("stress_test_send{}", n))
             .spawn(move || for m in 0..NUM_MESSAGES {
                 if m % 1000 == 0 { thread::sleep(Duration::from_millis(1)); }
                 assert_eq!(sender.send(format!("value{}_{}", n, m)), Ok(()));
             }).unwrap();
+        handles.push(handle);
     }
 
-    thread::sleep(Duration::from_millis(10));
-    receive_values(NUM_THREADS * NUM_MESSAGES, &mut receiver);
+    let handle = thread::Builder::new()
+        .name("stress_test_recv".to_owned())
+        .spawn(move || {
+            receive_values(NUM_THREADS * NUM_MESSAGES, receiver, sender);
+        }).unwrap();
+    handles.push(handle);
 
-    assert_eq!(receiver.try_receive(), Err(ReceiveError::Empty));
-    mem::drop(sender);
-    assert_eq!(receiver.try_receive(), Err(ReceiveError::Disconnected));
+    for handle in handles {
+        handle.join().expect("error in stress test thread");
+    }
 }
 
 const MAX_TRIES: usize = 10;
 
-fn receive_values(num_values: usize, receiver: &mut Receiver<String>) {
+fn receive_values(num_values: usize, mut receiver: Receiver<String>, sender: Sender<String>) {
     for n in 0..num_values {
-        receive_one(n, MAX_TRIES, receiver);
+        receive_one(n, MAX_TRIES, &mut receiver);
     }
+
+    assert_eq!(receiver.try_receive(), Err(ReceiveError::Empty));
+    mem::drop(sender);
+    assert_eq!(receiver.try_receive(), Err(ReceiveError::Disconnected));
 }
 
 fn receive_one(num: usize, tries_left: usize, receiver: &mut Receiver<String>) {
