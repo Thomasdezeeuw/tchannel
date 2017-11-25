@@ -26,15 +26,20 @@ impl<T> AtomicArc<T> {
         }
     }
 
-    /// Set the `AtomicArc` to the provided `arc`. If it's not empty it will
-    /// return an error that returns the provided `arc`.
-    pub fn set(&self, arc: Arc<T>) -> Result<(), Arc<T>> {
-        let ptr = Arc::into_raw(arc);
-        match self.ptr.compare_exchange(ptr::null_mut(), ptr as *mut T,
+    /// Set the `AtomicArc` to the provided `arc`. If this is empty it will
+    /// succeed. If it's not empty however it will return an error that returns
+    /// a copy of the current Arc (same as `get_ref`) and the provided `arc`.
+    pub fn set(&self, arc: Arc<T>) -> Result<(), (Arc<T>, Arc<T>)> {
+        let new_ptr = Arc::into_raw(arc);
+        match self.ptr.compare_exchange(ptr::null_mut(), new_ptr as *mut T,
             Ordering::SeqCst, Ordering::Relaxed)
         {
             Ok(_) => Ok(()),
-            Err(_) => Err(unsafe { Arc::from_raw(ptr) }),
+            Err(current_ptr) => {
+                let current = unsafe { copy_arc(current_ptr) };
+                let new = unsafe { Arc::from_raw(new_ptr) };
+                Err((current, new))
+            },
         }
     }
 

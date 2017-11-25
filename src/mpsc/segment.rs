@@ -132,12 +132,8 @@ impl<T> Segment<T> {
     pub fn expand_with_segment(&self, new_segment: Arc<Segment<T>>) {
         match self.next.set(new_segment) {
             Ok(()) => (),
-            Err(new_segment) => {
-                // We couldn't write to the `AtomicArc`, thus it means it's
-                // already set.
-                let next_segment = self.next.get_ref().unwrap();
-                next_segment.expand_with_segment(new_segment);
-            }
+            Err((next_segment, new_segment)) =>
+                next_segment.expand_with_segment(new_segment),
         }
     }
 
