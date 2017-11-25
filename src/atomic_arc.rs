@@ -56,7 +56,7 @@ impl<T> AtomicArc<T> {
     pub fn reset(&mut self) -> Option<Arc<T>> {
         match self.ptr.swap(ptr::null_mut(), Ordering::Acquire) {
             ptr if ptr.is_null() => None,
-            ptr => Some(unsafe { Arc::from_raw(ptr as *const T) }),
+            ptr => Some(unsafe { Arc::from_raw(ptr) }),
         }
     }
 }
