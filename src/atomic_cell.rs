@@ -88,7 +88,7 @@ impl<T> Default for AtomicCell<T> {
 
 impl<T> Drop for AtomicCell<T> {
     fn drop(&mut self) {
-        if self.is_full.load(Ordering::Relaxed) {
+        if self.is_full.load(Ordering::Acquire) {
             unsafe { ManuallyDrop::drop(&mut self.data); }
         }
     }
