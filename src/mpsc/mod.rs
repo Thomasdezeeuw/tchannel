@@ -135,6 +135,9 @@ pub struct Receiver<T> {
     old_segment: Option<Arc<Segment<T>>>,
 }
 
+/// The maximum number of `Segment`s reused in a single receive call.
+const MAX_REUSE_PER_RECV: usize = 10;
+
 impl<T> Receiver<T> {
     /// Try to receive a single value, none blocking. If the channel is empty or
     /// if the sender side is disconnected this will return an error.
@@ -218,38 +221,44 @@ impl<T> Receiver<T> {
 
     /// Try to reuse old segments in `self.old_segment`, if any.
     fn try_reuse(&mut self) {
-        // Try to reset the `self.old_segment` Segment and return it's next
-        // segment. This can fail for various reasons and will return (to the
-        // caller) instead.
-        let next_segment = match self.old_segment {
-            None => return,
-            Some(ref mut old_segment) => {
-                // Try to get alone access to the segment.
-                if let Some(ref mut old_segment) = Arc::get_mut(old_segment) {
-                    let next_segment = old_segment.reset();
-                    // This is safe because we checked in
-                    // `update_current_segment` if the segment has a next one
-                    // and we started using that before we could ever get here.
-                    debug_assert!(next_segment.is_some(), "old segment has no next segment");
-                    next_segment.unwrap()
-                } else {
-                    // A `Sender` still has a reference, we'll try again later.
-                    return;
-                }
-            },
-        };
+        for _ in 0..MAX_REUSE_PER_RECV {
+            // Try to reset the `self.old_segment` Segment and return it's next
+            // segment. This can fail for various reasons and will return (to
+            // the caller) instead.
+            let next_segment = match self.old_segment {
+                None => return,
+                Some(ref mut old_segment) => {
+                    // Try to get alone access to the segment.
+                    if let Some(old_segment) = Arc::get_mut(old_segment) {
+                        let next_segment = old_segment.reset();
+                        // This is safe because we checked in
+                        // `update_current_segment` if the segment has a next
+                        // one and we started using that before we could ever
+                        // get here.
+                        debug_assert!(next_segment.is_some(),
+                            "old segment has no next segment");
+                        next_segment.unwrap()
+                    } else {
+                        // A `Sender` still has a reference.
+                        return;
+                    }
+                },
+            };
 
-        if Arc::ptr_eq(&next_segment, &self.current) {
-            // If the next segment points to the segment we currently processing
-            // then we can reuse the segment and we're done.
-            let processed_segment = mem::replace(&mut self.old_segment, None);
-            self.current.expand_with_segment(processed_segment.unwrap());
-        } else {
-            // Else we set the `old_segment` to `next_segment` and try to reuse
-            // that.
-            let processed_segment = mem::replace(&mut self.old_segment, Some(next_segment));
-            self.current.expand_with_segment(processed_segment.unwrap());
-            self.try_reuse();
+            if Arc::ptr_eq(&next_segment, &self.current) {
+                // If the next segment points to the segment we currently
+                // processing then we can reuse the segment and we're done.
+                let processed_segment = mem::replace(&mut self.old_segment,
+                    None);
+                self.current.expand_with_segment(processed_segment.unwrap());
+                return;
+            } else {
+                // Else we set the `old_segment` to `next_segment` and try to
+                // reuse that.
+                let processed_segment = mem::replace(&mut self.old_segment,
+                    Some(next_segment));
+                self.current.expand_with_segment(processed_segment.unwrap());
+            }
         }
     }
 
