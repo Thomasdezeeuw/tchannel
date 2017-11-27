@@ -146,11 +146,9 @@ fn stress_test() {
     }
 }
 
-const MAX_TRIES: usize = 10;
-
 fn receive_values(num_values: usize, mut receiver: Receiver<String>, sender: Sender<String>) {
-    for n in 0..num_values {
-        receive_one(n, MAX_TRIES, &mut receiver);
+    for _ in 0..num_values {
+        receive_one(&mut receiver);
     }
 
     assert_eq!(receiver.try_receive(), Err(ReceiveError::Empty));
@@ -158,19 +156,21 @@ fn receive_values(num_values: usize, mut receiver: Receiver<String>, sender: Sen
     assert_eq!(receiver.try_receive(), Err(ReceiveError::Disconnected));
 }
 
-fn receive_one(num: usize, tries_left: usize, receiver: &mut Receiver<String>) {
-    if tries_left == 0 {
-        panic!("giving up on retrieving a value");
+const MAX_TRIES: usize = 10;
+
+fn receive_one(receiver: &mut Receiver<String>) {
+    for _ in 0..MAX_TRIES {
+        match receiver.try_receive() {
+            Ok(_) => return,
+            Err(ReceiveError::Empty) => {
+                thread::sleep(Duration::from_millis(1));
+                continue;
+            },
+            Err(ReceiveError::Disconnected) => panic!("the sender is disconnected"),
+        }
     }
 
-    match receiver.try_receive() {
-        Ok(_) => return,
-        Err(ReceiveError::Empty) => {
-            thread::sleep(Duration::from_millis(1));
-            receive_one(num, tries_left - 1, receiver);
-        },
-        Err(ReceiveError::Disconnected) => panic!("the sender is disconnected"),
-    }
+    panic!("giving up on retrieving a value");
 }
 
 #[test]
