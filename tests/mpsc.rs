@@ -113,9 +113,8 @@ impl Drop for DropTest {
     }
 }
 
-const NUM_THREADS: usize = 16;
-// TODO: increase to 1_000_000, currently overflows its stack.
-const NUM_MESSAGES: usize = 1_000;
+const NUM_THREADS: usize = 8;
+const NUM_MESSAGES: usize = 1_000_000;
 
 #[test]
 #[ignore]
@@ -154,6 +153,8 @@ fn receive_values(num_values: usize, mut receiver: Receiver<String>, sender: Sen
     assert_eq!(receiver.try_receive(), Err(ReceiveError::Empty));
     mem::drop(sender);
     assert_eq!(receiver.try_receive(), Err(ReceiveError::Disconnected));
+    // FIXME: this overflows the stack.
+    mem::forget(receiver);
 }
 
 const MAX_TRIES: usize = 10;
