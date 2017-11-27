@@ -97,8 +97,8 @@ impl<T> Segment<T> {
                         self.next.get_ref().unwrap()
                     },
                 };
-                // Make sure the next segment is full already, so we always
-                // return the correct tail segment.
+                // Make sure we return the correct tail segment, even if
+                // `next_segment` is already filled.
                 let tail_segment = match next_segment.append(value) {
                     Expanded::No => next_segment,
                     Expanded::Expanded(tail_segment) => tail_segment,
