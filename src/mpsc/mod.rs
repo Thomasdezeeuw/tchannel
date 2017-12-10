@@ -28,7 +28,7 @@ use self::segment::{Segment, SEGMENT_SIZE, Expanded};
 pub use super::{SendError, ReceiveError};
 
 /// Create a new multiple producers, single consumer channel.
-pub fn channel<T: Send + Sync>() -> (Sender<T>, Receiver<T>) {
+pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
     let segment = Arc::new(Segment::empty());
     let shared = Arc::new(Shared{
         receiver_alive: AtomicBool::new(true),
