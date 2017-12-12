@@ -38,8 +38,8 @@ pub enum ReceiveError<T> {
 ///
 /// [`ReceiveFuture`]: struct.ReceiveFuture.html
 /// [`ReceiveError::Disconnected`]: enum.ReceiveError.html#variant.Disconnected
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[cfg(feature = "futures")]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct SenderDisconnectedError;
 
 /// Create a new oneshot channel.
