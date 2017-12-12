@@ -130,10 +130,32 @@ impl<T> Segment<T> {
     /// have any. If however this `Segment` already has a next `Segment` it will
     /// be added to that `Segment` to not waste the allocation.
     pub fn expand_with_segment(&self, new_segment: Arc<Segment<T>>) {
-        match self.next.set(new_segment) {
-            Ok(()) => (),
-            Err((next_segment, new_segment)) =>
-                next_segment.expand_with_segment(new_segment),
+        let (next, new) = match self.next.set(new_segment) {
+            Ok(()) => return, // Best case we can expand this segment.
+            Err((next, new)) => (next, new),
+        };
+
+        // If not we need to loop until we find a segment that we can expand.
+        // Normally you would just call expand on next, but that will result in
+        // a stack overflow if the number of segments in the channel is very
+        // large.
+
+        // Both will be taken at the beginning of the loop and then set to
+        // something again it the set fails.
+        let mut current_segment: Option<Arc<Segment<T>>> = Some(next);
+        let mut new_segment: Option<Arc<Segment<T>>> = Some(new);
+
+        loop {
+            let current = current_segment.take().unwrap();
+            let new = new_segment.take().unwrap();
+
+            match current.next.set(new) {
+                Ok(()) => return, // Succesfully expanded the segment.
+                Err((next, new)) => {
+                    current_segment = Some(next);
+                    new_segment = Some(new);
+                },
+            }
         }
     }
 
