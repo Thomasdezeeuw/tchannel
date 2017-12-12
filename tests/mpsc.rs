@@ -127,6 +127,7 @@ fn stress_test() {
         let handle = thread::Builder::new()
             .name(format!("stress_test_send{}", n))
             .spawn(move || for m in 0..NUM_MESSAGES {
+                if m % 500 == 0 { thread::sleep(Duration::from_millis(5)); }
                 assert_eq!(sender.send(format!("value{}_{}", n, m)), Ok(()));
             }).unwrap();
         handles.push(handle);
@@ -161,7 +162,7 @@ fn receive_one(receiver: &mut Receiver<String>) {
         match receiver.try_receive() {
             Ok(_) => return,
             Err(ReceiveError::Empty) => {
-                thread::yield_now();
+                thread::sleep(Duration::from_millis(1));
                 continue;
             },
             Err(ReceiveError::Disconnected) => panic!("the sender is disconnected"),
