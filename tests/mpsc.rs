@@ -153,8 +153,6 @@ fn receive_values(num_values: usize, mut receiver: Receiver<String>, sender: Sen
     assert_eq!(receiver.try_receive(), Err(ReceiveError::Empty));
     mem::drop(sender);
     assert_eq!(receiver.try_receive(), Err(ReceiveError::Disconnected));
-    // FIXME: this overflows the stack.
-    mem::forget(receiver);
 }
 
 const MAX_TRIES: usize = 10;

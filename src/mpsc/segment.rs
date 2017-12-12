@@ -174,3 +174,28 @@ impl<T> Segment<T> {
         self.next.reset()
     }
 }
+
+impl<T> Drop for Segment<T> {
+    fn drop(&mut self) {
+        // All this code shouldn't be needed, however currently Rust (version
+        // 1.24) calls drop recursively. This means that if the number of linked
+        // segments is large enough the drop function will overflow its stack,
+        // so we need to do it in a loop instead.
+        let mut next_segment: Option<Arc<Segment<T>>> = self.next.reset();
+
+        while next_segment.is_some() {
+            let mut current = next_segment.take().unwrap();
+
+            match Arc::get_mut(&mut current) {
+                Some(current) => {
+                    // We have alone access to the current segment so we can
+                    // take its next segment before we drop the current segment.
+                    next_segment = current.next.reset();
+                },
+                // Don't have alone access, someone else needs to drop the
+                // segment.
+                None => return,
+            }
+        }
+    }
+}
