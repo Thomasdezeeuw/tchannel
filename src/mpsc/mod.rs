@@ -44,6 +44,7 @@ pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
         read_index: 0,
         shared: shared,
         old_segment: None,
+        registered: false,
     };
     (sender, receiver)
 }
@@ -133,6 +134,9 @@ pub struct Receiver<T> {
     /// completely written to and read from, but are not yet ready for reuse,
     /// e.g. `Sender` still has a reference to it, see `try_reuse`.
     old_segment: Option<Arc<Segment<T>>>,
+    /// Wether or not the sender has registered its task.
+    #[cfg(feature = "futures")]
+    registered: bool,
 }
 
 /// The maximum number of `Segment`s reused in a single receive call.
@@ -276,9 +280,11 @@ impl<T> Stream for Receiver<T> {
     /// No error will ever be returned and it can be safely ignored.
     type Error = ();
     fn poll(&mut self) -> Poll<Option<T>, ()> {
-        // We register our interest before anything so what ever happens we get
-        // a notification or we get an item.
-        self.shared.task.register();
+        // We register our interest only once before doing anything else. This
+        // way we're sure not to miss any notifications.
+        if !self.registered {
+            self.shared.task.register();
+        }
         match self.try_receive() {
             Ok(value) => Ok(Async::Ready(Some(value))),
             Err(err) => match err {
