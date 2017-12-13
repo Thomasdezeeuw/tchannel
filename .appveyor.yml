@@ -27,7 +27,7 @@ environment:
 build: off
 cache:
   - target
-  - %USERPROFILE%\.cargo
+  - '%USERPROFILE%\.cargo'
 install:
   - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
   - rustup-init -yv --default-toolchain %channel% --default-host %target%
