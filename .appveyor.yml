@@ -25,6 +25,9 @@ environment:
     - channel: nightly
       target: i686-pc-windows-gnu
 build: off
+cache:
+  - target
+  - %USERPROFILE%\.cargo
 install:
   - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
   - rustup-init -yv --default-toolchain %channel% --default-host %target%
