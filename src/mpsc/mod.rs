@@ -44,6 +44,7 @@ pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
         read_index: 0,
         shared: shared,
         old_segment: None,
+        #[cfg(feature = "futures")]
         registered: false,
     };
     (sender, receiver)
