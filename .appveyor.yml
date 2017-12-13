@@ -29,17 +29,5 @@ install:
   - appveyor DownloadFile https://win.rustup.rs/ -FileName rustup-init.exe
   - rustup-init -yv --default-toolchain %channel% --default-host %target%
   - set PATH=%PATH%;%USERPROFILE%\.cargo\bin
-  - rustc -vV
-  - cargo -vV
 test_script:
-  # Keep in sync with Travis.
-  - cargo test --verbose --all --all-features
-  - cargo test --verbose --all --no-default-features
-  # Make sure release mode works as well.
-  - cargo test --verbose --release --all --all-features
-  - cargo test --verbose --release --all --no-default-features
-  # Stress test, in development and release modes..
-  - cargo test --verbose --all --all-features -- --ignored
-  - cargo test --verbose --all --no-default-features -- --ignored
-  - cargo test --verbose --release --all --all-features -- --ignored
-  - cargo test --verbose --release --all --no-default-features -- --ignored
+  - make test

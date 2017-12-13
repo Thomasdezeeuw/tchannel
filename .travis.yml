@@ -9,16 +9,4 @@ rust:
   - beta
   - nightly
 script:
-  - cargo --version
-  - rustc --version
-  # Keep in sync with AppVeyor.
-  - cargo test --verbose --all --all-features
-  - cargo test --verbose --all --no-default-features
-  # Make sure release mode works as well.
-  - cargo test --verbose --release --all --all-features
-  - cargo test --verbose --release --all --no-default-features
-  # Stress test, in development and release modes..
-  - cargo test --verbose --all --all-features -- --ignored
-  - cargo test --verbose --all --no-default-features -- --ignored
-  - cargo test --verbose --release --all --all-features -- --ignored
-  - cargo test --verbose --release --all --no-default-features -- --ignored
+  - make test
