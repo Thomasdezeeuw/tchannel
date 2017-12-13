@@ -30,4 +30,4 @@ install:
   - rustup-init -yv --default-toolchain %channel% --default-host %target%
   - set PATH=%PATH%;%USERPROFILE%\.cargo\bin
 test_script:
-  - make test
+  - C:\MinGW\bin\mingw32-make.exe test
