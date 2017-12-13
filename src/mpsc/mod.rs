@@ -5,8 +5,6 @@
 // or http://opensource.org/licenses/MIT>, at your option. This file may not be
 // used, copied, modified, or distributed except according to those terms.
 
-// TODO: update docs and comments.
-
 //! Multiple producers, single consumer channels.
 //!
 //! See the [root of the crate] for more documentation.
@@ -192,6 +190,7 @@ impl<T> Receiver<T> {
         match self.current.next_segment() {
             Some(next_segment) => {
                 let mut old_segment = mem::replace(&mut self.current, next_segment);
+                // It wil use index 0 in try_receive after this call.
                 self.read_index = 1;
 
                 // Before we can actually reuse the `old_segment`, we need to
