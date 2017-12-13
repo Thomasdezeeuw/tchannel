@@ -12,7 +12,6 @@ extern crate futures;
 use std::{mem, thread};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Duration;
 
 use tchannel::mpsc::*;
 
@@ -127,7 +126,7 @@ fn stress_test() {
         let handle = thread::Builder::new()
             .name(format!("stress_test_send{}", n))
             .spawn(move || for m in 0..NUM_MESSAGES {
-                if m % 500 == 0 { thread::sleep(Duration::from_millis(5)); }
+                if m % 500 == 0 { thread::yield_now(); }
                 assert_eq!(sender.send(format!("value{}_{}", n, m)), Ok(()));
             }).unwrap();
         handles.push(handle);
@@ -162,7 +161,7 @@ fn receive_one(receiver: &mut Receiver<String>) {
         match receiver.try_receive() {
             Ok(_) => return,
             Err(ReceiveError::Empty) => {
-                thread::sleep(Duration::from_millis(1));
+                thread::yield_now();
                 continue;
             },
             Err(ReceiveError::Disconnected) => panic!("the sender is disconnected"),
