@@ -114,7 +114,7 @@ impl Drop for DropTest {
 }
 
 const NUM_THREADS: usize = 8;
-const NUM_MESSAGES: usize = 1_000_000;
+const NUM_MESSAGES: usize = 1_000; // FIXME: increase to 1_000_000.
 
 #[test]
 #[ignore]
