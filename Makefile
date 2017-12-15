@@ -1,7 +1,7 @@
 ifdef CI
-TEST_FLAGS = "--all --verbose"
+TEST_FLAGS = --all --verbose
 else
-TEST_FLAGS = "--all"
+TEST_FLAGS = --all
 endif
 
 version:
