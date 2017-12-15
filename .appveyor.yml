@@ -34,3 +34,4 @@ install:
   - set PATH=%PATH%;%USERPROFILE%\.cargo\bin
 test_script:
   - C:\MinGW\bin\mingw32-make.exe test
+  #- C:\MinGW\bin\mingw32-make.exe stress_test

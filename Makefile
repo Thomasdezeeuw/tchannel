@@ -1,3 +1,9 @@
+ifdef CI
+TEST_FLAGS = "--all --verbose"
+else
+TEST_FLAGS = "--all"
+endif
+
 version:
 	cargo --version
 	rustc --version
@@ -7,16 +13,17 @@ build:
 	cargo build --all-features
 
 test: version build
-	cargo test --verbose --all --all-features
-	cargo test --verbose --all --no-default-features
+	cargo test $(TEST_FLAGS) --no-default-features
+	cargo test $(TEST_FLAGS) --all-features
 	# Make sure release mode works as well.
-	cargo test --verbose --release --all --all-features
-	cargo test --verbose --release --all --no-default-features
-	# Stress test, in development and release modes..
-	# TODO: renable the stress test below.
-	#cargo test --verbose --all --all-features -- --ignored
-	#cargo test --verbose --all --no-default-features -- --ignored
-	#cargo test --verbose --release --all --all-features -- --ignored
-	#cargo test --verbose --release --all --no-default-features -- --ignored
+	cargo test $(TEST_FLAGS) --release --no-default-features
+	cargo test $(TEST_FLAGS) --release --all-features
 
-.PHONY: version build test
+stress_test:
+	cargo test $(TEST_FLAGS) --no-default-features -- --ignored
+	cargo test $(TEST_FLAGS) --all-features -- --ignored
+	# Make sure release mode works as well.
+	cargo test $(TEST_FLAGS) --release --no-default-features -- --ignored
+	cargo test $(TEST_FLAGS) --release --all-features -- --ignored
+
+.PHONY: version build test stress_test
